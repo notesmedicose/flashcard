@@ -1,0 +1,765 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Flashcards — Electric Charges & Fields</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=Inconsolata:wght@400;600;700&family=Lora:ital,wght@0,400;1,400&display=swap" rel="stylesheet">
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+:root {
+  --bg: #f5f0e8;
+  --surface: #ede7d9;
+  --card-front: #1a1a2e;
+  --card-back: #16213e;
+  --ink: #1a1a2e;
+  --muted: #7a7060;
+  --accent: #e85d04;
+  --teal: #0f7b6c;
+  --gold: #c9842a;
+  --border: #d4c9b0;
+  --white: #faf7f2;
+}
+
+body {
+  background: var(--bg);
+  color: var(--ink);
+  font-family: 'Syne', sans-serif;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+/* NOISE TEXTURE OVERLAY */
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.04'/%3E%3C/svg%3E");
+  pointer-events: none;
+  z-index: 0;
+  opacity: 0.6;
+}
+
+/* HEADER */
+header {
+  padding: 28px 32px 20px;
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  position: relative;
+  z-index: 1;
+  background: var(--white);
+}
+.logo {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 3px;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+.logo span { color: var(--accent); }
+.header-title {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--ink);
+  letter-spacing: 0.5px;
+}
+.header-count {
+  font-family: 'Inconsolata', monospace;
+  font-size: 12px;
+  color: var(--muted);
+  background: var(--surface);
+  padding: 4px 12px;
+  border-radius: 20px;
+  border: 1px solid var(--border);
+}
+
+/* FILTER BAR */
+.filter-bar {
+  padding: 16px 32px;
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  align-items: center;
+  border-bottom: 1px solid var(--border);
+  background: var(--white);
+  position: relative;
+  z-index: 1;
+}
+.filter-label {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  color: var(--muted);
+  margin-right: 4px;
+}
+.filter-btn {
+  padding: 5px 14px;
+  border-radius: 20px;
+  font-size: 11px;
+  font-family: 'Syne', sans-serif;
+  font-weight: 600;
+  letter-spacing: 0.5px;
+  cursor: pointer;
+  border: 1px solid var(--border);
+  background: transparent;
+  color: var(--muted);
+  transition: all 0.2s;
+}
+.filter-btn:hover { border-color: var(--accent); color: var(--accent); }
+.filter-btn.active { background: var(--accent); color: white; border-color: var(--accent); }
+
+/* PROGRESS */
+.progress-bar-wrap {
+  height: 3px;
+  background: var(--surface);
+  position: relative;
+  z-index: 1;
+}
+.progress-bar-fill {
+  height: 100%;
+  background: linear-gradient(90deg, var(--accent), #ff9a3c);
+  transition: width 0.4s ease;
+  width: 0%;
+}
+
+/* MAIN AREA */
+main {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 32px 20px;
+  position: relative;
+  z-index: 1;
+}
+
+/* CARD STAGE */
+.card-stage {
+  width: 100%;
+  max-width: 580px;
+  perspective: 1200px;
+  margin-bottom: 24px;
+}
+
+.flashcard {
+  width: 100%;
+  height: 340px;
+  position: relative;
+  transform-style: preserve-3d;
+  transition: transform 0.65s cubic-bezier(0.23, 1, 0.32, 1);
+  cursor: pointer;
+}
+.flashcard.flipped { transform: rotateY(180deg); }
+
+.card-face {
+  position: absolute;
+  inset: 0;
+  border-radius: 20px;
+  backface-visibility: hidden;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  box-shadow: 0 12px 40px rgba(26,26,46,0.18), 0 2px 8px rgba(26,26,46,0.08);
+}
+
+/* FRONT */
+.card-front {
+  background: var(--card-front);
+}
+.front-top {
+  padding: 20px 28px 0;
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+}
+.card-category {
+  font-family: 'Inconsolata', monospace;
+  font-size: 10px;
+  letter-spacing: 2.5px;
+  text-transform: uppercase;
+  padding: 4px 10px;
+  border-radius: 4px;
+  font-weight: 600;
+}
+.cat-formula { background: rgba(232,93,4,0.2); color: #ff8c4a; }
+.cat-concept { background: rgba(15,123,108,0.2); color: #3ecfb8; }
+.cat-law { background: rgba(201,132,42,0.2); color: #f0b55e; }
+.cat-property { background: rgba(120,90,200,0.2); color: #b09ef0; }
+.cat-compare { background: rgba(220,50,90,0.2); color: #ff7096; }
+.cat-application { background: rgba(50,150,220,0.2); color: #70c0ff; }
+
+.card-num {
+  font-family: 'Inconsolata', monospace;
+  font-size: 11px;
+  color: rgba(255,255,255,0.2);
+}
+.front-body {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px 32px;
+  text-align: center;
+}
+.question-text {
+  font-family: 'Lora', serif;
+  font-size: clamp(16px, 3vw, 22px);
+  color: #f0ece4;
+  line-height: 1.5;
+  font-style: italic;
+}
+.front-bottom {
+  padding: 16px 28px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 8px;
+  border-top: 1px solid rgba(255,255,255,0.06);
+}
+.tap-hint {
+  font-size: 11px;
+  color: rgba(255,255,255,0.25);
+  letter-spacing: 1px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.tap-icon {
+  width: 20px; height: 20px;
+  border: 1px solid rgba(255,255,255,0.15);
+  border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 10px;
+  animation: tapPulse 2s ease-in-out infinite;
+}
+@keyframes tapPulse { 0%,100%{opacity:0.4} 50%{opacity:1} }
+
+/* BACK */
+.card-back {
+  background: var(--card-back);
+  transform: rotateY(180deg);
+  border: 1px solid rgba(255,255,255,0.06);
+}
+.back-top {
+  padding: 18px 28px 0;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+.back-label {
+  font-family: 'Inconsolata', monospace;
+  font-size: 10px;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  color: rgba(255,255,255,0.3);
+}
+.back-body {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 16px 32px;
+  text-align: center;
+  gap: 12px;
+}
+.answer-main {
+  font-family: 'Inconsolata', monospace;
+  font-size: clamp(14px, 2.5vw, 20px);
+  color: #f0ece4;
+  font-weight: 600;
+  line-height: 1.5;
+}
+.answer-main.formula {
+  font-size: clamp(16px, 3vw, 26px);
+  color: #f0b55e;
+  letter-spacing: 0.5px;
+}
+.answer-sub {
+  font-size: 12px;
+  color: rgba(255,255,255,0.4);
+  line-height: 1.6;
+  max-width: 380px;
+}
+.answer-tag {
+  display: inline-block;
+  font-family: 'Inconsolata', monospace;
+  font-size: 10px;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  color: #3ecfb8;
+  border: 1px solid rgba(62,207,184,0.3);
+  padding: 3px 10px;
+  border-radius: 4px;
+}
+.back-bottom {
+  padding: 14px 28px;
+  border-top: 1px solid rgba(255,255,255,0.06);
+  display: flex;
+  justify-content: center;
+  gap: 10px;
+}
+.rate-btn {
+  padding: 6px 18px;
+  border-radius: 8px;
+  font-size: 11px;
+  font-family: 'Syne', sans-serif;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+  cursor: pointer;
+  border: 1px solid;
+  transition: all 0.15s;
+}
+.rate-hard { background: rgba(220,50,90,0.1); color: #ff7096; border-color: rgba(220,50,90,0.3); }
+.rate-hard:hover { background: rgba(220,50,90,0.25); }
+.rate-good { background: rgba(15,123,108,0.1); color: #3ecfb8; border-color: rgba(15,123,108,0.3); }
+.rate-good:hover { background: rgba(15,123,108,0.25); }
+.rate-easy { background: rgba(232,93,4,0.1); color: #ff8c4a; border-color: rgba(232,93,4,0.3); }
+.rate-easy:hover { background: rgba(232,93,4,0.25); }
+
+/* CONTROLS */
+.controls {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  margin-bottom: 20px;
+}
+.ctrl-btn {
+  width: 48px; height: 48px;
+  border-radius: 50%;
+  border: 1px solid var(--border);
+  background: var(--white);
+  cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 18px;
+  transition: all 0.2s;
+  color: var(--ink);
+}
+.ctrl-btn:hover:not(:disabled) { border-color: var(--accent); color: var(--accent); transform: scale(1.05); }
+.ctrl-btn:disabled { opacity: 0.3; cursor: not-allowed; }
+.card-counter {
+  font-family: 'Inconsolata', monospace;
+  font-size: 15px;
+  color: var(--muted);
+  min-width: 70px;
+  text-align: center;
+}
+.card-counter span { color: var(--ink); font-weight: 700; }
+
+/* DOTS */
+.dots-row {
+  display: flex;
+  gap: 5px;
+  flex-wrap: wrap;
+  justify-content: center;
+  max-width: 400px;
+  margin-bottom: 10px;
+}
+.dot {
+  width: 7px; height: 7px;
+  border-radius: 50%;
+  background: var(--border);
+  transition: all 0.3s;
+}
+.dot.current { background: var(--accent); transform: scale(1.4); }
+.dot.known { background: var(--teal); }
+.dot.hard { background: #dc3255; }
+
+/* STATS ROW */
+.stats-row {
+  display: flex;
+  gap: 20px;
+  font-family: 'Inconsolata', monospace;
+  font-size: 12px;
+  color: var(--muted);
+}
+.stat-item { display: flex; align-items: center; gap: 5px; }
+.stat-dot { width: 8px; height: 8px; border-radius: 50%; }
+
+/* DONE SCREEN */
+.done-screen {
+  display: none;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  gap: 16px;
+  animation: fadeIn 0.5s ease;
+}
+@keyframes fadeIn { from{opacity:0;transform:translateY(10px)} to{opacity:1;transform:translateY(0)} }
+.done-screen.visible { display: flex; }
+.done-big { font-size: 64px; }
+.done-title { font-size: 28px; font-weight: 800; color: var(--ink); }
+.done-sub { font-size: 14px; color: var(--muted); }
+.done-stats {
+  display: flex;
+  gap: 24px;
+  background: var(--white);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  padding: 20px 32px;
+}
+.done-stat { text-align: center; }
+.done-stat-num { font-family: 'Inconsolata', monospace; font-size: 28px; font-weight: 700; }
+.done-stat-label { font-size: 11px; color: var(--muted); letter-spacing: 1px; text-transform: uppercase; margin-top: 2px; }
+.restart-btn {
+  padding: 12px 32px;
+  border-radius: 12px;
+  background: var(--accent);
+  color: white;
+  border: none;
+  font-family: 'Syne', sans-serif;
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+  letter-spacing: 0.5px;
+  transition: all 0.2s;
+}
+.restart-btn:hover { transform: translateY(-2px); box-shadow: 0 6px 20px rgba(232,93,4,0.3); }
+
+/* KEYBOARD HINT */
+.kb-hint {
+  font-size: 11px;
+  color: var(--muted);
+  font-family: 'Inconsolata', monospace;
+  letter-spacing: 0.5px;
+  display: flex;
+  gap: 14px;
+  flex-wrap: wrap;
+  justify-content: center;
+  margin-top: 8px;
+}
+.kb { background: var(--white); border: 1px solid var(--border); border-radius: 4px; padding: 1px 7px; font-size: 10px; }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="logo">Ch.01 · <span>Physics</span></div>
+  <div class="header-title">Electric Charges & Fields</div>
+  <div class="header-count" id="headerCount">40 cards</div>
+</header>
+
+<div class="filter-bar">
+  <span class="filter-label">Filter:</span>
+  <button class="filter-btn active" onclick="filterCards('all', this)">All</button>
+  <button class="filter-btn" onclick="filterCards('formula', this)">Formulas</button>
+  <button class="filter-btn" onclick="filterCards('concept', this)">Concepts</button>
+  <button class="filter-btn" onclick="filterCards('law', this)">Laws</button>
+  <button class="filter-btn" onclick="filterCards('property', this)">Properties</button>
+  <button class="filter-btn" onclick="filterCards('application', this)">Applications</button>
+  <button class="filter-btn" onclick="filterCards('compare', this)">Compare</button>
+</div>
+
+<div class="progress-bar-wrap">
+  <div class="progress-bar-fill" id="progressBar"></div>
+</div>
+
+<main>
+  <div class="card-stage" id="cardStage">
+    <div class="flashcard" id="flashcard" onclick="flipCard()">
+      <div class="card-face card-front">
+        <div class="front-top">
+          <span class="card-category" id="cardCat"></span>
+          <span class="card-num" id="cardNum"></span>
+        </div>
+        <div class="front-body">
+          <div class="question-text" id="questionText"></div>
+        </div>
+        <div class="front-bottom">
+          <div class="tap-hint">
+            <div class="tap-icon">↻</div>
+            tap to flip
+          </div>
+        </div>
+      </div>
+      <div class="card-face card-back">
+        <div class="back-top">
+          <span class="back-label">Answer</span>
+          <span class="card-category" id="cardCatBack"></span>
+        </div>
+        <div class="back-body">
+          <div class="answer-main" id="answerMain"></div>
+          <div class="answer-sub" id="answerSub"></div>
+          <div class="answer-tag" id="answerTag" style="display:none"></div>
+        </div>
+        <div class="back-bottom">
+          <button class="rate-btn rate-hard" onclick="rateCard('hard', event)">✗ Hard</button>
+          <button class="rate-btn rate-good" onclick="rateCard('good', event)">~ Good</button>
+          <button class="rate-btn rate-easy" onclick="rateCard('easy', event)">✓ Easy</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="done-screen" id="doneScreen">
+    <div class="done-big">🎉</div>
+    <div class="done-title">Deck Complete!</div>
+    <div class="done-sub">You reviewed all the cards in this session</div>
+    <div class="done-stats">
+      <div class="done-stat">
+        <div class="done-stat-num" id="doneEasy" style="color:#0f7b6c">0</div>
+        <div class="done-stat-label">Easy</div>
+      </div>
+      <div class="done-stat">
+        <div class="done-stat-num" id="doneGood" style="color:#c9842a">0</div>
+        <div class="done-stat-label">Good</div>
+      </div>
+      <div class="done-stat">
+        <div class="done-stat-num" id="doneHard" style="color:#dc3255">0</div>
+        <div class="done-stat-label">Hard</div>
+      </div>
+    </div>
+    <button class="restart-btn" onclick="restartDeck()">↺ Restart Deck</button>
+  </div>
+
+  <div id="mainControls">
+    <div class="dots-row" id="dotsRow"></div>
+
+    <div class="controls">
+      <button class="ctrl-btn" id="prevBtn" onclick="prevCard()">←</button>
+      <div class="card-counter"><span id="curNum">1</span> / <span id="totNum">40</span></div>
+      <button class="ctrl-btn" id="nextBtn" onclick="nextCard()">→</button>
+    </div>
+
+    <div class="stats-row">
+      <div class="stat-item"><div class="stat-dot" style="background:#0f7b6c"></div><span id="easyCount">0</span> easy</div>
+      <div class="stat-item"><div class="stat-dot" style="background:#c9842a"></div><span id="goodCount">0</span> good</div>
+      <div class="stat-item"><div class="stat-dot" style="background:#dc3255"></div><span id="hardCount">0</span> hard</div>
+    </div>
+
+    <div class="kb-hint">
+      <span><span class="kb">Space</span> flip</span>
+      <span><span class="kb">→</span> next</span>
+      <span><span class="kb">←</span> prev</span>
+      <span><span class="kb">1</span> hard &nbsp;<span class="kb">2</span> good &nbsp;<span class="kb">3</span> easy</span>
+    </div>
+  </div>
+</main>
+
+<script>
+const cards = [
+  // FORMULAS
+  { cat: 'formula', q: 'State Coulomb\'s Law (scalar form)', a: 'F = (1/4πε₀) · |q₁q₂| / r²', sub: 'Force between two point charges; acts along the line joining them. k = 9×10⁹ N m² C⁻²', tag: 'Coulomb, 1785', isFormula: true },
+  { cat: 'formula', q: 'Write Coulomb\'s Law in vector form', a: 'F₂₁ = (1/4πε₀) · (q₁q₂ / r²₂₁) · r̂₂₁', sub: 'Force on q₂ due to q₁. Positive → repulsion (same direction as r̂₂₁); negative → attraction', tag: 'Vector Form', isFormula: true },
+  { cat: 'formula', q: 'Electric field due to a point charge Q', a: 'E = (1/4πε₀) · Q/r² · r̂', sub: 'Unit: N/C or V/m. Radially outward if Q > 0, inward if Q < 0', tag: 'SI Unit: N/C', isFormula: true },
+  { cat: 'formula', q: 'Relation between force and electric field', a: 'F(r) = qE(r)', sub: 'Force on a charge q in field E. This defines the SI unit of electric field as N/C', tag: 'Fundamental', isFormula: true },
+  { cat: 'formula', q: 'Quantisation of charge formula', a: 'q = ne', sub: 'n = 0, ±1, ±2, ±3 ... e = 1.602×10⁻¹⁹ C. All free charges are integral multiples of e', tag: 'Millikan 1912', isFormula: true },
+  { cat: 'formula', q: 'Electric flux through an area element', a: 'Δφ = E · ΔS = E ΔS cosθ', sub: 'θ = angle between E and the area vector ΔS. Unit: N C⁻¹ m² = V·m', tag: 'Electric Flux', isFormula: true },
+  { cat: 'formula', q: 'Gauss\'s Law (mathematical statement)', a: 'φ = q_enclosed / ε₀', sub: 'Total electric flux through any closed surface = total charge inside / ε₀. True for any shape/size of surface', tag: 'Gauss\'s Law', isFormula: true },
+  { cat: 'formula', q: 'Dipole moment vector p', a: 'p = q × 2a p̂', sub: 'Magnitude = charge × separation. Direction: from −q to +q. SI unit: C·m', tag: 'Dipole', isFormula: true },
+  { cat: 'formula', q: 'Torque on a dipole in uniform electric field', a: 'τ = p × E  (magnitude: pE sinθ)', sub: 'Tends to align dipole with field. Net force = 0 in uniform field', tag: 'Dipole in Field', isFormula: true },
+  { cat: 'formula', q: 'Electric field on dipole axis (r >> a)', a: 'E = 2p / 4πε₀r³', sub: 'Direction: along p̂ (same as dipole moment). Note 1/r³ dependence, not 1/r²', tag: 'Axial Field', isFormula: true },
+  { cat: 'formula', q: 'Electric field on equatorial plane (r >> a)', a: 'E = −p / 4πε₀r³', sub: 'Direction: opposite to p̂. Magnitude is half of axial field at same distance', tag: 'Equatorial Field', isFormula: true },
+  { cat: 'formula', q: 'E due to infinitely long wire (Gauss)', a: 'E = λ / 2πε₀r  (radially outward)', sub: 'λ = linear charge density (C/m). Gaussian surface: coaxial cylinder', tag: 'Application 1', isFormula: true },
+  { cat: 'formula', q: 'E due to infinite plane sheet (Gauss)', a: 'E = σ / 2ε₀', sub: 'σ = surface charge density. E is uniform, independent of distance from sheet, perpendicular to surface', tag: 'Application 2', isFormula: true },
+  { cat: 'formula', q: 'E outside a uniformly charged spherical shell', a: 'E = q / 4πε₀r²  (r ≥ R)', sub: 'Behaves as if all charge q = 4πR²σ is at the centre O', tag: 'Application 3', isFormula: true },
+  { cat: 'formula', q: 'E inside a uniformly charged spherical shell', a: 'E = 0  (r < R)', sub: 'Field is zero everywhere inside the shell — a direct result of Gauss\'s law and the 1/r² nature of Coulomb\'s law', tag: 'Key Result', isFormula: true },
+
+  // CONCEPTS
+  { cat: 'concept', q: 'What is Electrostatics?', a: 'Study of forces, fields and potentials arising from static (non-moving) charges', sub: 'Static = does not move or change with time. Everyday examples: spark from synthetic clothes, lightning, electric shock from car door', tag: '' },
+  { cat: 'concept', q: 'How does a body acquire positive charge?', a: 'By losing electrons (electron transfer to another body)', sub: 'Protons are fixed in the nucleus — they never transfer. It is always electrons that move during charging by friction or contact', tag: 'Charging Mechanism' },
+  { cat: 'concept', q: 'What is the gold-leaf electroscope?', a: 'A device to detect and indicate the amount of charge on a body', sub: 'Charged object → touches metal knob → charge flows to gold leaves → leaves diverge. Degree of divergence ∝ amount of charge', tag: 'Detection' },
+  { cat: 'concept', q: 'What is an electric dipole?', a: 'A pair of equal and opposite charges +q and −q separated by distance 2a', sub: 'Total charge = zero, but field ≠ 0. Field falls as 1/r³ (faster than single charge 1/r²)', tag: 'Dipole' },
+  { cat: 'concept', q: 'What are polar molecules? Give an example.', a: 'Molecules with permanent electric dipole moment even without an electric field', sub: 'Centres of +ve and −ve charges do not coincide. Example: H₂O (water). Non-polar examples: CO₂, CH₄', tag: 'Dipoles in Matter' },
+  { cat: 'concept', q: 'What is a Gaussian surface?', a: 'Any imaginary closed surface chosen to apply Gauss\'s law', sub: 'Can be any shape/size. Must not pass through discrete charges (E undefined there). Can pass through continuous charge distribution', tag: 'Gauss\'s Law' },
+  { cat: 'concept', q: 'What is the physical significance of electric field?', a: 'It represents the electrical environment of a system of charges at every point in space', sub: 'True significance: accounts for time delay in electromagnetic interactions. Field transports energy via electromagnetic waves', tag: 'Field Concept' },
+  { cat: 'concept', q: 'Why do electrostatic field lines never form closed loops?', a: 'Because the electrostatic field is conservative (path-independent)', sub: 'This is a fundamental property of electric fields. Magnetic field lines CAN form closed loops — a key difference', tag: 'Field Lines' },
+  { cat: 'concept', q: 'Why can\'t two electric field lines cross each other?', a: 'If they crossed, the field at that point would have two directions — which is physically impossible', sub: 'Electric field must have a unique direction at every point in space', tag: 'Field Lines' },
+
+  // LAWS
+  { cat: 'law', q: 'State the principle of superposition', a: 'Force on any charge due to other charges is the vector sum of individual Coulomb forces, each unaffected by remaining charges', sub: 'No additional multi-body forces arise. F₁ = F₁₂ + F₁₃ + ... + F₁ₙ', tag: 'Superposition' },
+  { cat: 'law', q: 'State the law of conservation of charge', a: 'Total charge of an isolated system always remains constant — charges can neither be created nor destroyed', sub: 'When bodies are charged by friction: charge is only transferred. When neutron → proton + electron: total charge = 0 throughout', tag: 'Conservation' },
+  { cat: 'law', q: 'What does Gauss\'s law tell us when enclosed charge = 0?', a: 'Total electric flux through the closed surface is zero', sub: 'But E itself need not be zero — E depends on all charges (inside and outside). Only the net flux is zero', tag: 'Gauss\'s Law' },
+
+  // PROPERTIES
+  { cat: 'property', q: 'What are the three basic properties of electric charge?', a: 'Additivity · Conservation · Quantisation', sub: 'Additivity: charges add algebraically like scalars. Conservation: total charge of isolated system is constant. Quantisation: q = ne', tag: 'A-C-Q' },
+  { cat: 'property', q: 'How is charge different from mass?', a: 'Charge can be positive, negative, or zero; mass is always positive', sub: 'Both are scalars, both satisfy additivity. Charge is also invariant in moving frames; kinetic energy is not. No quantisation law for mass.', tag: 'Charge vs Mass' },
+  { cat: 'property', q: 'What are the three types of charge distribution?', a: 'Linear (λ, C/m) · Surface (σ, C/m²) · Volume (ρ, C/m³)', sub: 'ΔQ = λΔl = σΔS = ρΔV. Quantisation ignored at macroscopic scale — treated as continuous', tag: 'Distributions' },
+
+  // COMPARE
+  { cat: 'compare', q: 'Compare Coulomb force and gravitational force (electron-proton)', a: 'Fe/Fg ≈ 2.4 × 10³⁹', sub: 'Electric force is ~10³⁹ times stronger than gravity! For two protons: Fe/Fg ≈ 1.3 × 10³⁶. Both follow inverse square law but gravity is always attractive', tag: 'Fe >> Fg' },
+  { cat: 'compare', q: 'Compare field on dipole axis vs equatorial plane (r >> a)', a: 'E_axis = 2p/4πε₀r³  vs  E_equatorial = p/4πε₀r³', sub: 'Axis field is exactly twice the equatorial field at same distance. Axis: along p̂. Equatorial: opposite to p̂', tag: 'Factor of 2' },
+  { cat: 'compare', q: 'Conductor vs Insulator: charge behaviour', a: 'Conductor: charge spreads over entire surface. Insulator: charge stays at point of placement', sub: 'Reason: in conductors electrons move freely. In insulators, electrons are tightly bound. Semiconductors are intermediate', tag: 'Key Difference' },
+  { cat: 'compare', q: 'Electric field vs Gravitational field: time of fall', a: 'In electric field: heavier particle (proton) falls slower. In gravity: time is independent of mass', sub: 'Electric: a = qE/m (depends on mass). Gravity: a = g (independent of mass). This contrasts free fall with electric-field-driven fall', tag: 'Contrast' },
+
+  // APPLICATIONS
+  { cat: 'application', q: 'Why does a charged comb attract uncharged paper?', a: 'The comb polarises the paper, inducing a dipole. Non-uniform comb field exerts net force on the induced dipole', sub: 'Induced dipole aligns with field (p ∥ E). In non-uniform field, net force acts toward stronger field region = toward comb', tag: 'Polarisation' },
+  { cat: 'application', q: 'How did Coulomb determine the 1/r² law experimentally?', a: 'Used a torsion balance. Halved charges using identical spheres in contact; varied distance and compared forces', sub: 'Sphere of charge q touched by identical uncharged sphere → each gets q/2. Varying both charge and distance, he arrived at F ∝ q₁q₂/r²', tag: 'Experiment' },
+  { cat: 'application', q: 'What does quantisation of charge confirm about electrons/protons?', a: 'All observable charges are integral multiples of e, confirming e is the fundamental indivisible unit of charge', sub: 'First suggested by Faraday (electrolysis laws). Experimentally proved by Millikan\'s oil-drop experiment in 1912', tag: 'Historical' },
+  { cat: 'application', q: 'Why is E = 0 inside a spherical shell significant?', a: 'It experimentally confirms the 1/r² dependence in Coulomb\'s law — any deviation would give non-zero field inside', sub: 'This is a direct consequence of Gauss\'s law. The Gaussian surface inside encloses zero charge → E × 4πr² = 0 → E = 0', tag: 'Confirms Coulomb' },
+  { cat: 'application', q: 'At macroscopic level, can we ignore quantisation of charge?', a: 'Yes — 1 μC contains ~10¹³ electron charges; step size e is negligibly small, charge appears continuous', sub: 'At microscopic level (few tens of e), quantisation cannot be ignored. Like a dotted line looking continuous from far', tag: 'Scale Matters' },
+];
+
+let activeCards = [...cards];
+let currentIndex = 0;
+let isFlipped = false;
+let ratings = {};
+let easyC = 0, goodC = 0, hardC = 0;
+
+const catLabels = {
+  formula: 'Formula', concept: 'Concept', law: 'Law',
+  property: 'Property', compare: 'Compare', application: 'Application'
+};
+const catClasses = {
+  formula: 'cat-formula', concept: 'cat-concept', law: 'cat-law',
+  property: 'cat-property', compare: 'cat-compare', application: 'cat-application'
+};
+
+function renderCard() {
+  if (currentIndex >= activeCards.length) { showDone(); return; }
+  const card = activeCards[currentIndex];
+  const fc = document.getElementById('flashcard');
+
+  // Reset flip
+  fc.classList.remove('flipped');
+  isFlipped = false;
+
+  // Populate
+  const catEl = document.getElementById('cardCat');
+  const catElBack = document.getElementById('cardCatBack');
+  catEl.textContent = catLabels[card.cat];
+  catEl.className = 'card-category ' + catClasses[card.cat];
+  catElBack.textContent = catLabels[card.cat];
+  catElBack.className = 'card-category ' + catClasses[card.cat];
+
+  document.getElementById('cardNum').textContent = (currentIndex + 1) + ' / ' + activeCards.length;
+  document.getElementById('questionText').textContent = card.q;
+
+  const answerEl = document.getElementById('answerMain');
+  answerEl.textContent = card.a;
+  answerEl.className = 'answer-main' + (card.isFormula ? ' formula' : '');
+
+  document.getElementById('answerSub').textContent = card.sub;
+
+  const tagEl = document.getElementById('answerTag');
+  if (card.tag) { tagEl.textContent = card.tag; tagEl.style.display = 'inline-block'; }
+  else { tagEl.style.display = 'none'; }
+
+  // Update counter & progress
+  document.getElementById('curNum').textContent = currentIndex + 1;
+  document.getElementById('totNum').textContent = activeCards.length;
+  document.getElementById('progressBar').style.width = ((currentIndex / activeCards.length) * 100) + '%';
+
+  // Dots
+  renderDots();
+
+  // Prev/Next buttons
+  document.getElementById('prevBtn').disabled = currentIndex === 0;
+  document.getElementById('nextBtn').disabled = currentIndex === activeCards.length - 1;
+}
+
+function renderDots() {
+  const row = document.getElementById('dotsRow');
+  row.innerHTML = '';
+  const show = Math.min(activeCards.length, 40);
+  for (let i = 0; i < show; i++) {
+    const d = document.createElement('div');
+    d.className = 'dot';
+    const r = ratings[i];
+    if (i === currentIndex) d.classList.add('current');
+    else if (r === 'easy' || r === 'good') d.classList.add('known');
+    else if (r === 'hard') d.classList.add('hard');
+    row.appendChild(d);
+  }
+}
+
+function flipCard() {
+  const fc = document.getElementById('flashcard');
+  isFlipped = !isFlipped;
+  fc.classList.toggle('flipped', isFlipped);
+}
+
+function nextCard() {
+  if (currentIndex < activeCards.length - 1) {
+    currentIndex++;
+    renderCard();
+  } else {
+    showDone();
+  }
+}
+
+function prevCard() {
+  if (currentIndex > 0) { currentIndex--; renderCard(); }
+}
+
+function rateCard(rating, e) {
+  e.stopPropagation();
+  ratings[currentIndex] = rating;
+  if (rating === 'easy') easyC++;
+  else if (rating === 'good') goodC++;
+  else hardC++;
+  document.getElementById('easyCount').textContent = easyC;
+  document.getElementById('goodCount').textContent = goodC;
+  document.getElementById('hardCount').textContent = hardC;
+  renderDots();
+  setTimeout(() => nextCard(), 280);
+}
+
+function filterCards(cat, btn) {
+  document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  if (cat === 'all') activeCards = [...cards];
+  else activeCards = cards.filter(c => c.cat === cat);
+  document.getElementById('headerCount').textContent = activeCards.length + ' cards';
+  document.getElementById('totNum').textContent = activeCards.length;
+  currentIndex = 0;
+  ratings = {};
+  easyC = 0; goodC = 0; hardC = 0;
+  document.getElementById('easyCount').textContent = 0;
+  document.getElementById('goodCount').textContent = 0;
+  document.getElementById('hardCount').textContent = 0;
+  document.getElementById('doneScreen').classList.remove('visible');
+  document.getElementById('doneScreen').style.display = 'none';
+  document.getElementById('mainControls').style.display = '';
+  document.getElementById('cardStage').style.display = '';
+  renderCard();
+}
+
+function showDone() {
+  document.getElementById('cardStage').style.display = 'none';
+  document.getElementById('mainControls').style.display = 'none';
+  document.getElementById('progressBar').style.width = '100%';
+  document.getElementById('doneEasy').textContent = easyC;
+  document.getElementById('doneGood').textContent = goodC;
+  document.getElementById('doneHard').textContent = hardC;
+  const ds = document.getElementById('doneScreen');
+  ds.style.display = 'flex';
+  setTimeout(() => ds.classList.add('visible'), 10);
+}
+
+function restartDeck() {
+  currentIndex = 0;
+  ratings = {};
+  easyC = 0; goodC = 0; hardC = 0;
+  document.getElementById('easyCount').textContent = 0;
+  document.getElementById('goodCount').textContent = 0;
+  document.getElementById('hardCount').textContent = 0;
+  const ds = document.getElementById('doneScreen');
+  ds.classList.remove('visible');
+  ds.style.display = 'none';
+  document.getElementById('cardStage').style.display = '';
+  document.getElementById('mainControls').style.display = '';
+  renderCard();
+}
+
+// Keyboard controls
+document.addEventListener('keydown', e => {
+  if (e.key === ' ' || e.key === 'Enter') { e.preventDefault(); flipCard(); }
+  else if (e.key === 'ArrowRight') nextCard();
+  else if (e.key === 'ArrowLeft') prevCard();
+  else if (e.key === '1' && isFlipped) rateCard('hard', { stopPropagation: ()=>{} });
+  else if (e.key === '2' && isFlipped) rateCard('good', { stopPropagation: ()=>{} });
+  else if (e.key === '3' && isFlipped) rateCard('easy', { stopPropagation: ()=>{} });
+});
+
+// Init
+renderCard();
+</script>
+</body>
+</html>
